@@ -99,7 +99,7 @@ class PTBModel(object):
   """The PTB model."""
 
   def __init__(self, is_training, config, input_):
-    self._input = input_
+    self._input = input_  # shape:[batch_size, num_steps, ...]
 
     batch_size = input_.batch_size
     num_steps = input_.num_steps
@@ -122,20 +122,20 @@ class PTBModel(object):
       else:
         return tf.contrib.rnn.BasicLSTMCell(
             size, forget_bias=0.0, state_is_tuple=True)
-    attn_cell = lstm_cell
-    if is_training and config.keep_prob < 1:
+    attn_cell = lstm_cell # closure，f返回一个BaseLSTMCell
+    if is_training and config.keep_prob < 1: # keep_prob：在dropout的时候是否保持weights；如果小于1，就用Dropout包括一层。
       def attn_cell():
         return tf.contrib.rnn.DropoutWrapper(
             lstm_cell(), output_keep_prob=config.keep_prob)
     cell = tf.contrib.rnn.MultiRNNCell(
-        [attn_cell() for _ in range(config.num_layers)], state_is_tuple=True)
+        [attn_cell() for _ in range(config.num_layers)], state_is_tuple=True)  # 添加hidden layers
 
     self._initial_state = cell.zero_state(batch_size, data_type())
 
     with tf.device("/cpu:0"):
       embedding = tf.get_variable(
           "embedding", [vocab_size, size], dtype=data_type())
-      inputs = tf.nn.embedding_lookup(embedding, input_.input_data)
+      inputs = tf.nn.embedding_lookup(embedding, input_.input_data) # 获取输入参数
 
     if is_training and config.keep_prob < 1:
       inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -153,7 +153,7 @@ class PTBModel(object):
     state = self._initial_state
     with tf.variable_scope("RNN"):
       for time_step in range(num_steps):
-        if time_step > 0: tf.get_variable_scope().reuse_variables()
+        if time_step > 0: tf.get_variable_scope().reuse_variables() # 接着之前训练过的Variable继续训练
         (cell_output, state) = cell(inputs[:, time_step, :], state)
         outputs.append(cell_output)
 

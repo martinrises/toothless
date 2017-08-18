@@ -102,18 +102,18 @@ def ptb_producer(raw_data, batch_size, num_steps, name=None):
     raw_data = tf.convert_to_tensor(raw_data, name="raw_data", dtype=tf.int32)
 
     data_len = tf.size(raw_data)
-    batch_len = data_len // batch_size
+    batch_len = data_len // batch_size # batch的次数
     data = tf.reshape(raw_data[0 : batch_size * batch_len],
-                      [batch_size, batch_len]) # 我需要input的数据怎么用batch机制来进行转换。
+                      [batch_size, batch_len]) # tensorflow希望所有batch_input的shape是：[B, T, ...] ;其中B是batch_size, T是the length in time of each step, tf.matmul()需要input的rank大于等于2
 
-    epoch_size = (batch_len - 1) // num_steps
+    epoch_size = (batch_len - 1) // num_steps # epoch的数量
     assertion = tf.assert_positive(
         epoch_size,
         message="epoch_size == 0, decrease batch_size or num_steps")
     with tf.control_dependencies([assertion]):
       epoch_size = tf.identity(epoch_size, name="epoch_size")
 
-    i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()
+    i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()  # 多线程读取数据
     x = tf.strided_slice(data, [0, i * num_steps],
                          [batch_size, (i + 1) * num_steps])
     x.set_shape([batch_size, num_steps])
