@@ -352,7 +352,7 @@ def main(_):
                                                 config.init_scale)
 
     with tf.name_scope("Train"):
-      train_input = PTBInput(config=config, data=train_data, name="TrainInput")
+      train_input = PTBInput(config=config, data=train_data, name="TrainInput") # 将原始的数据转化成需要的数据格式，转化的工作在reader.ptb_producer()中进行，主要input有，data, batch_size, step_num
       with tf.variable_scope("Model", reuse=None, initializer=initializer):
         m = PTBModel(is_training=True, config=config, input_=train_input)
       tf.summary.scalar("Training Loss", m.cost)
